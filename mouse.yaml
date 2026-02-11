@@ -1,6 +1,6 @@
-path: C:\Users\BIT\OneDrive\Desktop\dection project\mouse
-train: C:\Users\BIT\OneDrive\Desktop\dection project\mouse\mouse train
-val: C:\Users\BIT\OneDrive\Desktop\dection project\mouse\Mouse test
+path: dataset
+train: images/train
+val: images/val
 
 nc: 1
 names: ['mouse']
