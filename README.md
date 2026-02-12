@@ -95,7 +95,7 @@ _______________________________________________________________________________
 
 
 
-git clone https://github.com/pulkitkher/Rodent_AI.git
+git clone https://github.com/pulkitkher/Rodent-AI.git
 
 cd RodentAI_System
 
