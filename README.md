@@ -48,7 +48,7 @@ _______________________________________________________________________________
 
 ## Project Structure
 
-RodentAI_System/
+Rodent_AI/
 │
 ├── src/
 │ ├── detect_webcam.py
@@ -95,7 +95,7 @@ _______________________________________________________________________________
 
 
 
-git clone https://github.com/your-username/RodentAI_System.git
+git clone https://github.com/pulkitkher/Rodent_AI.git
 
 cd RodentAI_System
 
@@ -104,7 +104,7 @@ cd RodentAI_System
 
 
 
-conda create -p venv python=3.10 -y
+conda create -p venv python=3.12 -y
 conda activate venv/
 
 
