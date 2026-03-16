@@ -1,61 +1,153 @@
-import cv2
-import os
-import csv
-from datetime import datetime
 from ultralytics import YOLO
-from hardware_serial import send_signal
-from telegram_alert import send_alert
+import cv2
+import serial
 import time
+import requests
+from datetime import datetime
 
-model = YOLO("weights/best.pt")
-cap = cv2.VideoCapture(0)
+TOKEN="8732225121:AAFwbCmDjSC0ydP0VZjBJHB7nNUlVjczqJQ"
+CHAT_ID="6591002982"
 
-os.makedirs("logs", exist_ok=True)
+arduino=serial.Serial("COM11",9600,timeout=1)
 
-last_alert_time = 0
-cooldown = 120  
+model=YOLO("best.pt")
+
+
+cap=cv2.VideoCapture(0)
+
+last_update=None
+
+def send_alert(img):
+
+    now=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    message=f"""
+⚠ Rodent Detected
+Time: {now}
+
+Choose Action:
+"""
+
+    keyboard={
+    "inline_keyboard":[
+    [{"text":"Activate Repeller","callback_data":"repel"}],
+    [{"text":"Ignore","callback_data":"ignore"}]
+    ]
+    }
+
+    requests.post(
+    f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+    json={"chat_id":CHAT_ID,"text":message,"reply_markup":keyboard}
+    )
+
+    requests.post(
+    f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
+    files={"photo":open(img,"rb")},
+    data={"chat_id":CHAT_ID}
+    )
+
+def check_telegram():
+
+    global last_update
+
+    url=f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+
+    if last_update:
+        url+=f"?offset={last_update}"
+
+    data=requests.get(url).json()
+
+    for r in data["result"]:
+
+        last_update=r["update_id"]+1
+
+        if "callback_query" in r:
+
+            action=r["callback_query"]["data"]
+
+            if action=="repel":
+
+                print("Repeller Activated")
+                arduino.write(b'R')
+
+                time.sleep(10)
+
+                arduino.write(b'O')
+
+            if action=="ignore":
+
+                print("User ignored alert")
+                arduino.write(b'O')
+
+print("System Ready")
 
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
 
-    results = model(frame, conf=0.6)
-    annotated = results[0].plot()
+    check_telegram()
 
-    detected = len(results[0].boxes) > 0
+    if arduino.in_waiting:
 
-    if detected:
-        send_signal(1)
+        signal=arduino.readline().decode().strip()
 
-        current_time = time.time()
-        if current_time - last_alert_time > cooldown:
-            send_alert()
-            last_alert_time = current_time
+        if signal=="MOVE":
 
-        
-            with open("logs/events.csv", "a", newline="") as file:
-                writer = csv.writer(file)
+            print("Movement detected")
+            print("Camera started")
 
-                
-                confidence = float(results[0].boxes.conf[0])
+            start=time.time()
 
-                writer.writerow([
-                    datetime.now().strftime("%Y-%m-%d"),
-                    datetime.now().strftime("%H:%M:%S"),
-                    "Mouse Detected",
-                    round(confidence, 3)
-                ])
+            detect_counter=0
+            alert_sent=False
 
-    else:
-        send_signal(0)
+            while time.time()-start<20:
 
-    cv2.imshow("Rodent Detection", annotated)
+                ret,frame=cap.read()
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+                if not ret:
+                    continue
+
+                results=model(frame,conf=0.5)
+
+                detected=False
+
+                for r in results:
+                    if len(r.boxes)>0:
+                        detected=True
+
+                if detected:
+
+                    detect_counter+=1
+
+                else:
+
+                    detect_counter=0
+
+                if detect_counter>=3:
+
+                    arduino.write(b'A')
+
+                    if not alert_sent:
+
+                        img="rodent.jpg"
+
+                        cv2.imwrite(img,frame)
+
+                        send_alert(img)
+
+                        alert_sent=True
+
+                else:
+
+                    arduino.write(b'B')
+
+                cv2.imshow("Rodent Detection",frame)
+
+                if cv2.waitKey(1)==27:
+                    break
+
+            arduino.write(b'B')
+
+            print("Camera stopped")
 
 cap.release()
 cv2.destroyAllWindows()
-
-
