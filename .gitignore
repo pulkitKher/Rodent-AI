@@ -18,4 +18,4 @@ logs/
 # venv 
 
 venv/
-src/detect_webcam.py
+src/
