@@ -21,3 +21,6 @@ venv/
 
 #src
 src/detect_webcam.py
+
+#env
+.env
