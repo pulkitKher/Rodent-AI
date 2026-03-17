@@ -28,7 +28,7 @@ def send_alert(img):
     now=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     message=f"""
-⚠ Rodent Detected
+# Rodent Detected
 Time: {now}
 
 Choose Action:
