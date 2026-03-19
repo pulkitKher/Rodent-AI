@@ -6,6 +6,7 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import numpy as np
 
 load_dotenv()
 
